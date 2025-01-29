@@ -1,0 +1,89 @@
+from datetime import datetime, timedelta
+
+class Event:
+    def _init_(self, start_time, end_time, description):
+        self.start_time = datetime.strptime(start_time, "%H:%M")
+        self.end_time = datetime.strptime(end_time, "%H:%M")
+        self.description = description
+
+    def _repr_(self):
+        return f"Event('{self.start_time.strftime('%H:%M')}', '{self.end_time.strftime('%H:%M')}', '{self.description}')"
+
+class EventManager:
+    def _init_(self):
+        self.events = []
+
+    def add_event(self, start_time, end_time, description):
+        new_event = Event(start_time, end_time, description)
+        
+        # Check for conflicts with existing events
+        for event in self.events:
+            if self._is_conflicting(new_event, event):
+                print(f"Conflict detected between '{event.description}' and '{new_event.description}'")
+                alternative_time = self.suggest_alternative(new_event)
+                print(f"Suggested alternative time: {alternative_time}")
+                return
+        
+        self.events.append(new_event)
+
+    def _is_conflicting(self, event1, event2):
+        """Check if two events overlap."""
+        return not (event1.end_time <= event2.start_time or event1.start_time >= event2.end_time)
+
+    def suggest_alternative(self, conflicting_event):
+        """Suggest an alternative time slot."""
+        alternative_start = conflicting_event.end_time + timedelta(minutes=10)
+        alternative_end = alternative_start + timedelta(hours=1)
+
+        # Ensure the alternative time does not conflict with any existing events
+        while any(self._is_conflicting(conflicting_event, event) for event in self.events):
+            alternative_start = alternative_end + timedelta(minutes=10)
+            alternative_end = alternative_start + timedelta(hours=1)
+
+        return alternative_start.strftime('%H:%M') + " to " + alternative_end.strftime('%H:%M')
+
+    def sort_events(self):
+        """Sort events based on start time."""
+        self.events.sort(key=lambda event: event.start_time)
+
+    def show_events(self):
+        if not self.events:
+            print("No events scheduled.")
+        else:
+            for event in self.events:
+                print(f"{event.start_time.strftime('%H:%M')} - {event.end_time.strftime('%H:%M')} | {event.description}")
+
+
+# Example usage
+if _name_ == "_main_":
+    manager = EventManager()
+
+    # Adding the example events
+    events_to_add = [
+        ("09:00", "10:30", "Meeting A"),
+        ("10:00", "11:30", "Workshop B"),
+        ("12:00", "13:00", "Lunch Break"),
+        ("10:30", "12:00", "Presentation C")
+    ]
+
+    for start, end, desc in events_to_add:
+        manager.add_event(start, end, desc)
+
+    # Sort events by start time
+    manager.sort_events()
+
+    # Display all events
+    print("\nSorted Schedule:")
+    manager.show_events()
+
+    # Display Conflicting Events and Suggested Resolutions
+    print("\nConflicting Events:")
+    for i in range(1, len(manager.events)):
+        if manager._is_conflicting(manager.events[i-1], manager.events[i]):
+            print(f"{manager.events[i-1].description} and {manager.events[i].description}")
+    
+    print("\nSuggested Resolutions:")
+    # For each conflicting event, suggest an alternative time
+    for i in range(1, len(manager.events)):
+        if manager._is_conflicting(manager.events[i-1], manager.events[i]):
+            print(f"Reschedule '{manager.events[i].description}' to Start: {manager.suggest_alternative(manager.events[i])}"
